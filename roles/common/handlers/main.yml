@@ -1,0 +1,8 @@
+# roles/common/handlers/main.yml
+---
+- name: Reload sysctl
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: 1
+    sysctl_file: /etc/sysctl.conf
+    reload: true
