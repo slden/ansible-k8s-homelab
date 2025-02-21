@@ -5,14 +5,14 @@
   roles:
     - common
 
-# - name: Initialize Kubernetes Master
-#   hosts: master
-#   become: true
-#   roles:
-#     - master
+- name: Initialize Kubernetes Master
+  hosts: master
+  become: true
+  roles:
+    - master
 
-# - name: Join Kubernetes Worker Nodes
-#   hosts: worker
-#   become: true
-#   roles:
-#     - worker
+- name: Join Kubernetes Worker Nodes
+  hosts: worker
+  become: true
+  roles:
+    - worker
