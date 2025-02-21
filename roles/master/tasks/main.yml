@@ -1,0 +1,35 @@
+# roles/master/tasks/main.yml
+---
+- name: Initialize Kubernetes
+  ansible.builtin.command: kubeadm init --pod-network-cidr=10.244.0.0/16
+  register: kubeadm_init
+  changed_when: "'kubeadm init' in kubeadm_init.stdout"
+
+- name: Configure kubectl for root user
+  ansible.builtin.file:
+    path: $HOME/.kube
+    state: directory
+    mode: '0755'
+
+- name: Copy kubeconfig file
+  ansible.builtin.copy:
+    src: /etc/kubernetes/admin.conf
+    dest: $HOME/.kube/config
+    remote_src: true
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Apply Flannel network plugin
+  kubernetes.core.k8s:
+    state: present
+    src: https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+
+- name: Get join command
+  ansible.builtin.command: kubeadm token create --print-join-command
+  register: join_command
+  changed_when: false
+
+- name: Set join command as fact
+  ansible.builtin.set_fact:
+    kube_join_command: "{{ join_command.stdout }}"

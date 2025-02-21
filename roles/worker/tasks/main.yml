@@ -1,0 +1,7 @@
+# roles/worker/tasks/main.yml
+---
+- name: Join cluster
+  ansible.builtin.command: "{{ hostvars['k8s-master'].kube_join_command }}"
+  when: hostvars['k8s-master'].kube_join_command is defined
+  args:
+    creates: /etc/kubernetes/kubelet.conf
