@@ -1,6 +1,6 @@
 # Kubernetes Home Lab with Ansible
 
-This repository contains Ansible playbooks and roles for setting up a Kubernetes home lab. It's designed for testing and educational purposes.
+This repository contains Ansible playbooks and roles for setting up a Kubernetes home lab. It's designed for testing purposes.
 
 ## Cluster Setup
 
