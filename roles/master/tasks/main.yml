@@ -1,5 +1,11 @@
 # roles/master/tasks/main.yml
 ---
+- name: Install python3-kubernetes package
+  ansible.builtin.apt:
+    name: python3-kubernetes
+    state: present
+    update_cache: true
+
 - name: Initialize Kubernetes
   ansible.builtin.command: kubeadm init --pod-network-cidr=10.244.0.0/16
   register: kubeadm_init
