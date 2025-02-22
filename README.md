@@ -17,6 +17,12 @@ This repository contains Ansible playbooks and roles for setting up a Kubernetes
 - SSH access and sudo privileges on the target nodes.
 - Proper network connectivity between the nodes.
 
-## How to Use
+## Running the Playbook
 
-WIP
+To set up the Kubernetes home lab, run the following command:
+
+```sh
+ansible-playbook -i inventory.ini k8s_lab_setup.yml -K -u <YOUR_USER>
+```
+
+Replace `<YOUR_USER>` with your actual username.
