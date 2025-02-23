@@ -1,9 +1,17 @@
 # roles/common/tasks/main.yml
 ---
-- name: Disable swap
-  ansible.builtin.command: swapoff -a
+# Эта задача собирает информацию о доступном объеме swp-памяти.
+- name: Gather memory facts
+  ansible.builtin.setup:
+    filter: ansible_swaptotal_mb
+
+  # Эта задача отключает swap, если он включен, проверяя, что swap больше 0.
+- name: Disable swap if enabled
+  ansible.builtin.command:
+    cmd: swapoff -a
   args:
     creates: /proc/swaps
+  when: ansible_facts.ansible_swaptotal_mb | int > 0
 
 - name: Remove swap entry from /etc/fstab
   ansible.builtin.lineinfile:
