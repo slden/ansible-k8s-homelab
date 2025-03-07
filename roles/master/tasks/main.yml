@@ -11,41 +11,74 @@
   register: k8s_initialized
 
 - name: Initialize Kubernetes
-  ansible.builtin.command: kubeadm init --pod-network-cidr=192.168.0.0/16
+  ansible.builtin.command: kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address={{ ansible_eth1.ipv4.address }}
   register: kubeadm_init
   when: not k8s_initialized.stat.exists
   changed_when: "'kubeadm init' in kubeadm_init.stdout"
 
-- name: Configure kubectl for root user
+- name: Create .kube directory in user's home
   ansible.builtin.file:
-    path: /root/.kube
+    path: "/home/vagrant/.kube"
     state: directory
+    owner: "vagrant"
+    group: "vagrant"
     mode: '0755'
 
-- name: Copy kubeconfig file
+- name: Copy admin.conf to user's kube config
+  become: true
   ansible.builtin.copy:
     src: /etc/kubernetes/admin.conf
-    dest: /root/.kube/config
-    remote_src: true
-    owner: root
-    group: root
+    dest: "/home/vagrant/.kube/config"
+    owner: "vagrant"
+    group: "vagrant"
     mode: '0644'
+    remote_src: true
 
-- name: Check if Calico is already installed
-  kubernetes.core.k8s_info:
-    kind: Pod
-    namespace: kube-system
-    name: calico-node
-  register: calico_installed
-  failed_when: false
-  changed_when: false
+- name: Create .kube directory in root's home
+  ansible.builtin.file:
+    path: "/root/.kube"
+    state: directory
+    owner: "root"
+    group: "root"
+    mode: '0755'
 
-- name: Apply Calico network plugin
+- name: Copy admin.conf to root kube config
+  become: true
+  ansible.builtin.copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "/root/.kube/config"
+    owner: "root"
+    group: "root"
+    mode: '0644'
+    remote_src: true
+
+- name: Wait for Kubernetes API server to be reachable
+  ansible.builtin.wait_for:
+    host: "{{ hostvars['k8s-master'].ansible_host }}"
+    port: 6443
+    delay: 10
+    timeout: 300
+
+- name: Apply Flannel network plugin
+  ansible.builtin.command: >
+    kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f
+    https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+  register: flannel_apply
+  changed_when: "'created' in flannel_apply.stdout or 'configured' in flannel_apply.stdout"
+
+# Удалить taints NoSchedule с мастер-узла для запуска подов на нем
+- name: Remove NoSchedule taints from master node
   kubernetes.core.k8s:
-    state: present
-    src: https://docs.projectcalico.org/manifests/calico.yaml
-  # Если Calico уже установлен, результат будет непустым (length != 0).
-  when: k8s_initialized.stat.exists and (calico_installed.resources | length == 0)
+    state: patched
+    name: "{{ inventory_hostname }}"
+    api_version: v1
+    kind: Node
+    merge_type: strategic-merge
+    patch: |
+      {"spec": {"taints": [
+        {"key": "node-role.kubernetes.io/master", "effect": "NoSchedule", "op": "Remove"},
+        {"key": "node-role.kubernetes.io/control-plane", "effect": "NoSchedule", "op": "Remove"}
+      ]}}
 
 # Получить команду для присоединения узлов к кластеру
 - name: Get join command

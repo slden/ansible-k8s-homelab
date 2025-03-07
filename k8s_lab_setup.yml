@@ -6,13 +6,13 @@
     - common
 
 - name: Initialize Kubernetes Master
-  hosts: master
+  hosts: k8s-master
   become: true
   roles:
     - master
 
 - name: Join Kubernetes Worker Nodes
-  hosts: worker
+  hosts: k8s-node
   become: true
   roles:
     - worker
